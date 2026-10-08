@@ -23,29 +23,40 @@ private struct EditorForm: View {
                 LabeledContent("Действие") {
                     Picker("Действие", selection: $model.action) {
                         ForEach(EditorAction.allCases) { action in
-                            Text(action.title).tag(action)
+                            Text(action.title)
+                                .lineLimit(1)
+                                .tag(action)
                         }
                     }
                     .labelsHidden()
                     .pickerStyle(.menu)
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
                 }
                 if model.action == .translate {
                     LabeledContent("Язык") {
                         Picker("Язык", selection: $model.language) {
                             ForEach(TranslationLanguage.allCases) { language in
-                                Text(language.title).tag(language)
+                                Text(language.title)
+                                    .lineLimit(1)
+                                    .tag(language)
                             }
                         }
                         .labelsHidden()
                         .pickerStyle(.menu)
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
                     }
                 }
-                Button(model.isStreaming ? "Стоп" : "Запустить") {
+                Button {
                     if model.isStreaming {
                         model.stop()
                     } else {
                         model.launch()
                     }
+                } label: {
+                    Text(model.isStreaming ? "Стоп" : "Запустить")
+                        .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(!model.isStreaming && !model.canLaunch)

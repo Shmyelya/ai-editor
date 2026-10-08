@@ -75,7 +75,7 @@ struct GroqChatService: Sendable {
             reasoningEffort: "low",
             messages: [
                 CompletionMessage(role: "system", content: systemPrompt),
-                CompletionMessage(role: "user", content: sourceText)
+                CompletionMessage(role: "user", content: "<<<TEXT\n\(sourceText)\nTEXT>>>")
             ]
         )
 
