@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import SwiftData
 
 @MainActor
 @Observable
@@ -14,11 +15,14 @@ final class EditorModel {
     private(set) var resultAction: EditorAction = .paraphrase
     private(set) var changeRibbon: WordChangeRibbon?
     private(set) var errorMessage: String?
+    private(set) var saveErrorMessage: String?
     private(set) var isStreaming = false
 
     private var requestTask: Task<Void, Never>?
     private var requestGeneration = 0
     private var sentLanguage: TranslationLanguage = .en
+    @ObservationIgnored private var attemptID: PersistentIdentifier?
+    @ObservationIgnored private var requestContext: ModelContext?
 
     var characterCount: Int {
         draft.count
@@ -44,35 +48,44 @@ final class EditorModel {
         draft = ""
     }
 
-    func launch() {
+    func launch(in context: ModelContext) {
         guard canLaunch, !isStreaming else { return }
+        attemptID = nil
         sourceText = draft
         resultAction = action
         sentLanguage = language
-        beginRequest(source: sourceText, action: resultAction, language: sentLanguage)
+        beginRequest(source: sourceText, action: resultAction, language: sentLanguage, context: context)
     }
 
-    func stop() {
+    func stop(in context: ModelContext) {
         guard isStreaming else { return }
         requestGeneration += 1
         requestTask?.cancel()
         requestTask = nil
         storeChangeRibbon()
         isStreaming = false
+        persist(in: context)
     }
 
-    func retry() {
+    func retry(in context: ModelContext) {
         guard errorMessage != nil, !isStreaming else { return }
-        beginRequest(source: sourceText, action: resultAction, language: sentLanguage)
+        beginRequest(source: sourceText, action: resultAction, language: sentLanguage, context: context)
     }
 
-    private func beginRequest(source: String, action: EditorAction, language: TranslationLanguage) {
+    private func beginRequest(
+        source: String,
+        action: EditorAction,
+        language: TranslationLanguage,
+        context: ModelContext
+    ) {
         requestTask?.cancel()
         requestGeneration += 1
         let generation = requestGeneration
+        requestContext = context
         resultText = ""
         changeRibbon = nil
         errorMessage = nil
+        saveErrorMessage = nil
         isStreaming = true
 
         let systemPrompt = action.systemPrompt(language: language)
@@ -99,6 +112,7 @@ final class EditorModel {
         requestTask = nil
         storeChangeRibbon()
         isStreaming = false
+        persistCurrentRequest()
     }
 
     private func failIfCurrent(_ error: Error, generation: Int) {
@@ -107,6 +121,42 @@ final class EditorModel {
         requestTask = nil
         storeChangeRibbon()
         isStreaming = false
+        persistCurrentRequest()
+    }
+
+    private func persistCurrentRequest() {
+        guard let requestContext else { return }
+        persist(in: requestContext)
+    }
+
+    private func persist(in context: ModelContext) {
+        guard !resultText.isEmpty else { return }
+        do {
+            if let attemptID {
+                let edits = try context.fetch(FetchDescriptor<TextEdit>())
+                guard let edit = edits.first(where: { $0.persistentModelID == attemptID }) else {
+                    saveErrorMessage = "Не удалось сохранить"
+                    return
+                }
+                edit.resultText = resultText
+                try context.save()
+            } else {
+                let edit = TextEdit(
+                    sourceText: sourceText,
+                    resultText: resultText,
+                    action: resultAction.rawValue,
+                    language: resultAction == .translate ? sentLanguage.rawValue : nil,
+                    createdAt: Date()
+                )
+                context.insert(edit)
+                try context.save()
+                attemptID = edit.persistentModelID
+            }
+            saveErrorMessage = nil
+        } catch {
+            context.rollback()
+            saveErrorMessage = "Не удалось сохранить"
+        }
     }
 
     private func storeChangeRibbon() {

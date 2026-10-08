@@ -1,3 +1,4 @@
+import SwiftData
 import SwiftUI
 import UIKit
 
@@ -14,6 +15,7 @@ struct EditorView: View {
 
 private struct EditorForm: View {
     @Bindable var model: EditorModel
+    @Environment(\.modelContext) private var modelContext
     @FocusState private var isDraftFocused: Bool
 
     var body: some View {
@@ -50,9 +52,9 @@ private struct EditorForm: View {
                 }
                 Button {
                     if model.isStreaming {
-                        model.stop()
+                        model.stop(in: modelContext)
                     } else {
-                        model.launch()
+                        model.launch(in: modelContext)
                     }
                 } label: {
                     Text(model.isStreaming ? "Стоп" : "Запустить")
@@ -78,9 +80,14 @@ private struct EditorForm: View {
                         .font(.body)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     Button("Повторить") {
-                        model.retry()
+                        model.retry(in: modelContext)
                     }
                     .buttonStyle(.bordered)
+                }
+                if let saveErrorMessage = model.saveErrorMessage {
+                    Text(saveErrorMessage)
+                        .font(.body)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
             .padding()

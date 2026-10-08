@@ -5,6 +5,7 @@
 //  Created by Yelzhan Yelikbaev on 07.10.2026.
 //
 
+import SwiftData
 import SwiftUI
 
 @main
@@ -13,5 +14,6 @@ struct testApp: App {
         WindowGroup {
             EditorView()
         }
+        .modelContainer(for: TextEdit.self)
     }
 }
