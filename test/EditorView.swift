@@ -65,10 +65,13 @@ private struct EditorForm: View {
                         .frame(maxWidth: .infinity)
                 }
                 if !model.resultText.isEmpty {
-                    Text(verbatim: model.resultText)
-                        .font(.body)
-                        .multilineTextAlignment(.leading)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    EditResultView(
+                        sourceText: model.sourceText,
+                        resultText: model.resultText,
+                        action: model.resultAction,
+                        isComplete: !model.isStreaming,
+                        ribbon: model.changeRibbon
+                    )
                 }
                 if let errorMessage = model.errorMessage {
                     Text(errorMessage)

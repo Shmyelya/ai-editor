@@ -10,13 +10,14 @@ final class EditorModel {
     var action: EditorAction = .paraphrase
     var language: TranslationLanguage = .en
     private(set) var resultText = ""
+    private(set) var sourceText = ""
+    private(set) var resultAction: EditorAction = .paraphrase
+    private(set) var changeRibbon: WordChangeRibbon?
     private(set) var errorMessage: String?
     private(set) var isStreaming = false
 
     private var requestTask: Task<Void, Never>?
     private var requestGeneration = 0
-    private var sentSource = ""
-    private var sentAction: EditorAction = .paraphrase
     private var sentLanguage: TranslationLanguage = .en
 
     var characterCount: Int {
@@ -45,10 +46,10 @@ final class EditorModel {
 
     func launch() {
         guard canLaunch, !isStreaming else { return }
-        sentSource = draft
-        sentAction = action
+        sourceText = draft
+        resultAction = action
         sentLanguage = language
-        beginRequest(source: sentSource, action: sentAction, language: sentLanguage)
+        beginRequest(source: sourceText, action: resultAction, language: sentLanguage)
     }
 
     func stop() {
@@ -56,12 +57,13 @@ final class EditorModel {
         requestGeneration += 1
         requestTask?.cancel()
         requestTask = nil
+        storeChangeRibbon()
         isStreaming = false
     }
 
     func retry() {
         guard errorMessage != nil, !isStreaming else { return }
-        beginRequest(source: sentSource, action: sentAction, language: sentLanguage)
+        beginRequest(source: sourceText, action: resultAction, language: sentLanguage)
     }
 
     private func beginRequest(source: String, action: EditorAction, language: TranslationLanguage) {
@@ -69,6 +71,7 @@ final class EditorModel {
         requestGeneration += 1
         let generation = requestGeneration
         resultText = ""
+        changeRibbon = nil
         errorMessage = nil
         isStreaming = true
 
@@ -93,15 +96,25 @@ final class EditorModel {
 
     private func finishIfCurrent(_ generation: Int) {
         guard generation == requestGeneration else { return }
-        isStreaming = false
         requestTask = nil
+        storeChangeRibbon()
+        isStreaming = false
     }
 
     private func failIfCurrent(_ error: Error, generation: Int) {
         guard generation == requestGeneration else { return }
         errorMessage = Self.message(for: error)
-        isStreaming = false
         requestTask = nil
+        storeChangeRibbon()
+        isStreaming = false
+    }
+
+    private func storeChangeRibbon() {
+        guard !resultText.isEmpty, resultAction != .translate else {
+            changeRibbon = nil
+            return
+        }
+        changeRibbon = WordChangeRibbon(source: sourceText, result: resultText)
     }
 
     private static func message(for error: Error) -> String {
