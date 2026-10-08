@@ -72,6 +72,21 @@ final class EditorModel {
         beginRequest(source: sourceText, action: resultAction, language: sentLanguage, context: context)
     }
 
+    func delete(_ edit: TextEdit, in context: ModelContext) {
+        let identifier = edit.persistentModelID
+        context.delete(edit)
+        do {
+            try context.save()
+        } catch {
+            context.rollback()
+            saveErrorMessage = "Не удалось сохранить"
+            return
+        }
+        if attemptID == identifier {
+            attemptID = nil
+        }
+    }
+
     private func beginRequest(
         source: String,
         action: EditorAction,

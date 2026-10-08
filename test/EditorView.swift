@@ -95,6 +95,11 @@ private struct EditorForm: View {
         }
         .scrollDismissesKeyboard(.interactively)
         .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                NavigationLink("История правок") {
+                    HistoryView(model: model)
+                }
+            }
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
                 Button("Готово") {
