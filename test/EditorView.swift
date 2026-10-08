@@ -127,11 +127,7 @@ private struct EditorForm: View {
     private var draftSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("\(model.characterCount)/\(EditorModel.characterLimit)")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .monospacedDigit()
-                Spacer()
+                Spacer(minLength: 0)
                 PasteButton(payloadType: String.self) { strings in
                     guard let text = strings.first else { return }
                     model.paste(text)
@@ -147,7 +143,6 @@ private struct EditorForm: View {
                     .focused($isDraftFocused)
                     .frame(height: fieldHeight)
                     .scrollContentBackground(.hidden)
-                    .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 10))
                 if model.draft.isEmpty {
                     Text("Вставьте текст")
                         .font(.body)
@@ -157,6 +152,14 @@ private struct EditorForm: View {
                         .allowsHitTesting(false)
                 }
             }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
+            Text("\(model.characterCount)/\(EditorModel.characterLimit)")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .monospacedDigit()
+                .frame(maxWidth: .infinity, alignment: .trailing)
         }
     }
 
