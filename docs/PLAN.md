@@ -176,10 +176,10 @@
 
 Приложение открывается редактором с именем «AI-редактор». Чата больше нет.
 
-- В `project.yml`: bundle id `com.yelzhanyelikbayev.aieditor`, отображаемое имя «AI-редактор». Имя продукта, схема и таргет остаются `test`. Swift 6, iOS 18, только iPhone, пакетов нет.
-- Удалить `ChatView.swift`, `ChatScreenModel.swift`, `ChatListView.swift`, `ChatListModel.swift`, `Models/Chat.swift`, `Models/Message.swift`, `Models/MessageRole.swift`.
-- `testApp` показывает `EditorView`: заголовок «Редактор», без `modelContainer`.
-- `GroqChatService`, `ChatService` и `Secrets` пока остаются, чтобы таргет собирался.
+- [x] В `project.yml`: bundle id `com.yelzhanyelikbayev.aieditor`, отображаемое имя «AI-редактор». Имя продукта, схема и таргет остаются `test`. Swift 6, iOS 18, только iPhone, пакетов нет.
+- [x] Удалить `ChatView.swift`, `ChatScreenModel.swift`, `ChatListView.swift`, `ChatListModel.swift`, `Models/Chat.swift`, `Models/Message.swift`, `Models/MessageRole.swift`.
+- [x] `testApp` показывает `EditorView`: заголовок «Редактор», без `modelContainer`.
+- [x] `GroqChatService`, `ChatService` и `Secrets` пока остаются, чтобы таргет собирался.
 
 В этом шаге нет поля ввода, запроса, истории и просмотра.
 
