@@ -13,12 +13,12 @@ struct EditPresentation {
         sourceText = edit.sourceText
         resultText = edit.resultText
         action = EditorAction(rawValue: edit.action) ?? .paraphrase
-        actionLine = Self.actionLine(storedAction: edit.action, toneCode: edit.tone)
-        dateLine = Self.dateLine(
+        actionLine = Self.actionLine(
             storedAction: edit.action,
-            languageCode: edit.language,
-            date: edit.createdAt
+            toneCode: edit.tone,
+            languageCode: edit.language
         )
+        dateLine = Self.dateLine(date: edit.createdAt)
         if action == .translate || resultText.isEmpty {
             ribbon = nil
         } else {
@@ -30,24 +30,38 @@ struct EditPresentation {
         EditorAction(rawValue: storedAction)?.title ?? ""
     }
 
-    static func actionLine(storedAction: String, toneCode: String?) -> String {
+    static func actionLine(storedAction: String, toneCode: String?, languageCode: String?) -> String {
         let title = actionTitle(storedAction: storedAction)
-        guard let toneCode, let toneTitle = ParaphraseTone(rawValue: toneCode)?.title else {
+        if storedAction == EditorAction.translate.rawValue,
+           let languageCode,
+           let languageTitle = TranslationLanguage(rawValue: languageCode)?.title {
+            return "\(title) → \(languageTitle)"
+        }
+        guard let toneCode,
+              let tone = ParaphraseTone(rawValue: toneCode),
+              tone != .neutral else {
             return title
         }
-        return "\(title), \(toneTitle)"
+        return "\(title), \(tone.title)"
     }
 
-    static func dateLine(storedAction: String, languageCode: String?, date: Date) -> String {
-        let formatted = date.formatted(dateStyle)
-        guard storedAction == EditorAction.translate.rawValue,
-              let languageCode,
-              let title = TranslationLanguage(rawValue: languageCode)?.title else {
-            return formatted
+    static func dateLine(date: Date, now: Date = .now, calendar: Calendar = .current) -> String {
+        let time = date.formatted(timeStyle)
+        if calendar.isDateInToday(date) {
+            return "Сегодня, \(time)"
         }
-        return "\(title), \(formatted)"
+        if calendar.isDateInYesterday(date) {
+            return "Вчера, \(time)"
+        }
+        let dayMonth = date.formatted(dayMonthStyle)
+        guard calendar.component(.year, from: date) == calendar.component(.year, from: now) else {
+            let year = calendar.component(.year, from: date)
+            return "\(dayMonth) \(year), \(time)"
+        }
+        return "\(dayMonth), \(time)"
     }
 
-    private static let dateStyle = Date.FormatStyle(date: .abbreviated, time: .shortened)
-        .locale(Locale(identifier: "ru_RU"))
+    private static let locale = Locale(identifier: "ru_RU")
+    private static let timeStyle = Date.FormatStyle(date: .omitted, time: .shortened).locale(locale)
+    private static let dayMonthStyle = Date.FormatStyle().day().month(.abbreviated).locale(locale)
 }

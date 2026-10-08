@@ -111,9 +111,12 @@ private struct EditorForm: View {
         .scrollDismissesKeyboard(.interactively)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                NavigationLink("История правок") {
+                NavigationLink {
                     HistoryView(model: model)
+                } label: {
+                    Image(systemName: "clock.arrow.circlepath")
                 }
+                .accessibilityLabel("История правок")
             }
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
@@ -133,8 +136,16 @@ private struct EditorForm: View {
                     model.paste(text)
                 }
                 .environment(\.locale, Locale(identifier: "ru_RU"))
-                Button("Очистить") {
-                    model.clear()
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .tint(.secondary)
+                if !model.draft.isEmpty {
+                    Button("Очистить") {
+                        model.clear()
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .tint(.secondary)
                 }
             }
             ZStack(alignment: .topLeading) {
