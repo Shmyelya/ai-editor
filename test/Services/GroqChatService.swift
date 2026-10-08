@@ -1,13 +1,22 @@
 import Foundation
 
-struct GroqChatService: ChatService, Sendable {
-    private static let model = "openai/gpt-oss-120b"
-    private static let systemPrompt = "Отвечай обычным текстом. Не используй заголовки, таблицы, цитаты и горизонтальные линии. Допустимы жирный, курсив, код в строке и простые списки."
+enum GroqRequestError: Error, Sendable {
+    case noNetwork
+    case apiLimit
+    case failed
+}
 
-    func streamReply(to messages: [ChatServiceMessage]) -> AsyncThrowingStream<String, any Error> {
+struct GroqChatService: Sendable {
+    private static let model = "openai/gpt-oss-120b"
+
+    func streamEdit(systemPrompt: String, sourceText: String) -> AsyncThrowingStream<String, any Error> {
         AsyncThrowingStream { continuation in
             let task = Task {
-                await Self.deliver(messages: messages, continuation: continuation)
+                await Self.deliver(
+                    systemPrompt: systemPrompt,
+                    sourceText: sourceText,
+                    continuation: continuation
+                )
             }
             continuation.onTermination = { @Sendable _ in
                 task.cancel()
@@ -16,13 +25,19 @@ struct GroqChatService: ChatService, Sendable {
     }
 
     private static func deliver(
-        messages: [ChatServiceMessage],
+        systemPrompt: String,
+        sourceText: String,
         continuation: AsyncThrowingStream<String, any Error>.Continuation
     ) async {
         let session = makeSession()
         defer { session.finishTasksAndInvalidate() }
         do {
-            try await streamBody(messages: messages, session: session, continuation: continuation)
+            try await streamBody(
+                systemPrompt: systemPrompt,
+                sourceText: sourceText,
+                session: session,
+                continuation: continuation
+            )
             continuation.finish()
         } catch is CancellationError {
             continuation.finish()
@@ -30,35 +45,38 @@ struct GroqChatService: ChatService, Sendable {
             if error.code == .cancelled {
                 continuation.finish()
             } else if Self.isNoNetwork(error) {
-                continuation.finish(throwing: ChatServiceError.noNetwork)
+                continuation.finish(throwing: GroqRequestError.noNetwork)
             } else {
-                continuation.finish(throwing: ChatServiceError.failed)
+                continuation.finish(throwing: GroqRequestError.failed)
             }
-        } catch let error as ChatServiceError {
+        } catch let error as GroqRequestError {
             continuation.finish(throwing: error)
         } catch {
-            continuation.finish(throwing: ChatServiceError.failed)
+            continuation.finish(throwing: GroqRequestError.failed)
         }
     }
 
     private static func streamBody(
-        messages: [ChatServiceMessage],
+        systemPrompt: String,
+        sourceText: String,
         session: URLSession,
         continuation: AsyncThrowingStream<String, any Error>.Continuation
     ) async throws {
         let key = Secrets.decodedKey()
-        guard !key.isEmpty else { throw ChatServiceError.failed }
+        guard !key.isEmpty else { throw GroqRequestError.failed }
 
         guard let url = URL(string: "https://api.groq.com/openai/v1/chat/completions") else {
-            throw ChatServiceError.failed
+            throw GroqRequestError.failed
         }
 
         let payload = CompletionRequest(
             model: Self.model,
             stream: true,
             reasoningEffort: "low",
-            messages: [CompletionMessage(role: "system", content: Self.systemPrompt)]
-                + messages.map { CompletionMessage(role: $0.role, content: $0.content) }
+            messages: [
+                CompletionMessage(role: "system", content: systemPrompt),
+                CompletionMessage(role: "user", content: sourceText)
+            ]
         )
 
         var request = URLRequest(url: url)
@@ -70,11 +88,11 @@ struct GroqChatService: ChatService, Sendable {
 
         let (bytes, response) = try await session.bytes(for: request)
         guard let http = response as? HTTPURLResponse else {
-            throw ChatServiceError.failed
+            throw GroqRequestError.failed
         }
         guard (200..<300).contains(http.statusCode) else {
             let body = try await responseBody(from: bytes)
-            throw groqChatFailure(statusCode: http.statusCode, body: body)
+            throw groqRequestFailure(statusCode: http.statusCode, body: body)
         }
 
         let decoder = JSONDecoder()
@@ -124,7 +142,7 @@ struct GroqChatService: ChatService, Sendable {
     }
 }
 
-func groqChatFailure(statusCode: Int, body: String) -> ChatServiceError {
+private func groqRequestFailure(statusCode: Int, body: String) -> GroqRequestError {
     if statusCode == 429 || bodyDescribesQuotaOrLimitExhaustion(body) {
         return .apiLimit
     }
@@ -189,7 +207,7 @@ private enum ServerSentEvent {
             return nil
         }
         if chunk.error != nil {
-            throw groqChatFailure(statusCode: statusCode, body: jsonText)
+            throw groqRequestFailure(statusCode: statusCode, body: jsonText)
         }
         let text = chunk.choices?.compactMap { $0.delta?.content }.joined() ?? ""
         guard !text.isEmpty else { return nil }

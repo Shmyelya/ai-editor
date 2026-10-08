@@ -40,11 +40,34 @@ private struct EditorForm: View {
                         .pickerStyle(.menu)
                     }
                 }
-                Button("Запустить") {
-                    model.launch()
+                Button(model.isStreaming ? "Стоп" : "Запустить") {
+                    if model.isStreaming {
+                        model.stop()
+                    } else {
+                        model.launch()
+                    }
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(!model.canLaunch)
+                .disabled(!model.isStreaming && !model.canLaunch)
+                if model.isStreaming, model.resultText.isEmpty {
+                    ProgressView()
+                        .frame(maxWidth: .infinity)
+                }
+                if !model.resultText.isEmpty {
+                    Text(verbatim: model.resultText)
+                        .font(.body)
+                        .multilineTextAlignment(.leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                if let errorMessage = model.errorMessage {
+                    Text(errorMessage)
+                        .font(.body)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    Button("Повторить") {
+                        model.retry()
+                    }
+                    .buttonStyle(.bordered)
+                }
             }
             .padding()
             .frame(maxWidth: .infinity, alignment: .leading)
