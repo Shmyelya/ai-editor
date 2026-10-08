@@ -54,7 +54,7 @@ private struct HistoryRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(EditPresentation.actionTitle(storedAction: edit.action))
+            Text(EditPresentation.actionLine(storedAction: edit.action, toneCode: edit.tone))
                 .font(.headline)
             Text(verbatim: edit.sourceText)
                 .font(.body)

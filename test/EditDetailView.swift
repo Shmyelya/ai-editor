@@ -26,6 +26,6 @@ struct EditDetailView: View {
             .padding()
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .navigationTitle(presentation.action.title)
+        .navigationTitle(presentation.actionLine)
     }
 }

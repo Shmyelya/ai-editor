@@ -5,6 +5,7 @@ struct EditPresentation {
     let sourceText: String
     let resultText: String
     let action: EditorAction
+    let actionLine: String
     let dateLine: String
     let ribbon: WordChangeRibbon?
 
@@ -12,6 +13,7 @@ struct EditPresentation {
         sourceText = edit.sourceText
         resultText = edit.resultText
         action = EditorAction(rawValue: edit.action) ?? .paraphrase
+        actionLine = Self.actionLine(storedAction: edit.action, toneCode: edit.tone)
         dateLine = Self.dateLine(
             storedAction: edit.action,
             languageCode: edit.language,
@@ -26,6 +28,14 @@ struct EditPresentation {
 
     static func actionTitle(storedAction: String) -> String {
         EditorAction(rawValue: storedAction)?.title ?? ""
+    }
+
+    static func actionLine(storedAction: String, toneCode: String?) -> String {
+        let title = actionTitle(storedAction: storedAction)
+        guard let toneCode, let toneTitle = ParaphraseTone(rawValue: toneCode)?.title else {
+            return title
+        }
+        return "\(title), \(toneTitle)"
     }
 
     static func dateLine(storedAction: String, languageCode: String?, date: Date) -> String {

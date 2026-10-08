@@ -10,6 +10,7 @@ final class EditorModel {
     var draft = ""
     var action: EditorAction = .paraphrase
     var language: TranslationLanguage = .en
+    var tone: ParaphraseTone = .neutral
     private(set) var resultText = ""
     private(set) var sourceText = ""
     private(set) var resultAction: EditorAction = .paraphrase
@@ -21,6 +22,7 @@ final class EditorModel {
     private var requestTask: Task<Void, Never>?
     private var requestGeneration = 0
     private var sentLanguage: TranslationLanguage = .en
+    private var sentTone: ParaphraseTone = .neutral
     @ObservationIgnored private var attemptID: PersistentIdentifier?
     @ObservationIgnored private var requestContext: ModelContext?
 
@@ -54,7 +56,14 @@ final class EditorModel {
         sourceText = draft
         resultAction = action
         sentLanguage = language
-        beginRequest(source: sourceText, action: resultAction, language: sentLanguage, context: context)
+        sentTone = tone
+        beginRequest(
+            source: sourceText,
+            action: resultAction,
+            language: sentLanguage,
+            tone: sentTone,
+            context: context
+        )
     }
 
     func stop(in context: ModelContext) {
@@ -69,7 +78,13 @@ final class EditorModel {
 
     func retry(in context: ModelContext) {
         guard errorMessage != nil, !isStreaming else { return }
-        beginRequest(source: sourceText, action: resultAction, language: sentLanguage, context: context)
+        beginRequest(
+            source: sourceText,
+            action: resultAction,
+            language: sentLanguage,
+            tone: sentTone,
+            context: context
+        )
     }
 
     func delete(_ edit: TextEdit, in context: ModelContext) {
@@ -91,6 +106,7 @@ final class EditorModel {
         source: String,
         action: EditorAction,
         language: TranslationLanguage,
+        tone: ParaphraseTone,
         context: ModelContext
     ) {
         requestTask?.cancel()
@@ -103,7 +119,7 @@ final class EditorModel {
         saveErrorMessage = nil
         isStreaming = true
 
-        let systemPrompt = action.systemPrompt(language: language)
+        let systemPrompt = action.systemPrompt(language: language, tone: tone)
         let service = GroqChatService()
         requestTask = Task {
             let stream = service.streamEdit(systemPrompt: systemPrompt, sourceText: source)
@@ -161,6 +177,7 @@ final class EditorModel {
                     resultText: resultText,
                     action: resultAction.rawValue,
                     language: resultAction == .translate ? sentLanguage.rawValue : nil,
+                    tone: resultAction == .paraphrase ? sentTone.rawValue : nil,
                     createdAt: Date()
                 )
                 context.insert(edit)

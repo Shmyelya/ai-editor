@@ -7,13 +7,22 @@ final class TextEdit {
     var resultText: String
     var action: String
     var language: String?
+    var tone: String?
     var createdAt: Date
 
-    init(sourceText: String, resultText: String, action: String, language: String?, createdAt: Date) {
+    init(
+        sourceText: String,
+        resultText: String,
+        action: String,
+        language: String?,
+        tone: String?,
+        createdAt: Date
+    ) {
         self.sourceText = sourceText
         self.resultText = resultText
         self.action = action
         self.language = language
+        self.tone = tone
         self.createdAt = createdAt
     }
 }

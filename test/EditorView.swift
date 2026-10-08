@@ -35,6 +35,21 @@ private struct EditorForm: View {
                     .lineLimit(1)
                     .fixedSize(horizontal: true, vertical: false)
                 }
+                if model.action == .paraphrase {
+                    LabeledContent("Тон") {
+                        Picker("Тон", selection: $model.tone) {
+                            ForEach(ParaphraseTone.allCases) { tone in
+                                Text(tone.title)
+                                    .lineLimit(1)
+                                    .tag(tone)
+                            }
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.menu)
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
+                    }
+                }
                 if model.action == .translate {
                     LabeledContent("Язык") {
                         Picker("Язык", selection: $model.language) {
