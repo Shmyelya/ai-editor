@@ -9,6 +9,7 @@ final class TextEdit {
     var language: String?
     var tone: String?
     var createdAt: Date
+    var completedNormally: Bool = true
 
     init(
         sourceText: String,
@@ -16,7 +17,8 @@ final class TextEdit {
         action: String,
         language: String?,
         tone: String?,
-        createdAt: Date
+        createdAt: Date,
+        completedNormally: Bool
     ) {
         self.sourceText = sourceText
         self.resultText = resultText
@@ -24,5 +26,6 @@ final class TextEdit {
         self.language = language
         self.tone = tone
         self.createdAt = createdAt
+        self.completedNormally = completedNormally
     }
 }

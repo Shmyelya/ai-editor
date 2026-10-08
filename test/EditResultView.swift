@@ -6,6 +6,7 @@ struct EditResultView: View {
     let resultText: String
     let action: EditorAction
     let isComplete: Bool
+    let allowUnchangedNotice: Bool
     let ribbon: WordChangeRibbon?
 
     @State private var mode: Mode = .result
@@ -21,6 +22,10 @@ struct EditResultView: View {
         VStack(alignment: .leading, spacing: 12) {
             if isComplete, action == .translate {
                 translationBlocks
+            } else if isComplete, let notice = unchangedNotice {
+                resultSection(notice: notice) {
+                    plainResult
+                }
             } else if isComplete {
                 Picker("Режим", selection: $mode) {
                     Text("Результат").tag(Mode.result)
@@ -80,13 +85,26 @@ struct EditResultView: View {
         }
     }
 
+    private var unchangedNotice: String? {
+        guard allowUnchangedNotice, action != .translate else { return nil }
+        let source = sourceText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let result = resultText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard source == result else { return nil }
+        return action == .proofread ? "Ошибок не найдено" : "Текст не изменился"
+    }
+
     private func resultSection<Content: View>(
-        summary: String?,
+        summary: String? = nil,
+        notice: String? = nil,
         @ViewBuilder content: () -> Content
     ) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .center, spacing: 8) {
-                if let summary {
+                if let notice {
+                    Label(notice, systemImage: "checkmark.circle")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                } else if let summary {
                     Text(summary)
                         .font(.caption)
                         .foregroundStyle(.secondary)

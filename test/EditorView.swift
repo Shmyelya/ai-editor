@@ -87,6 +87,7 @@ private struct EditorForm: View {
                         resultText: model.resultText,
                         action: model.resultAction,
                         isComplete: !model.isStreaming,
+                        allowUnchangedNotice: !model.attemptWasInterrupted,
                         ribbon: model.changeRibbon
                     )
                 }
@@ -138,14 +139,14 @@ private struct EditorForm: View {
                 .environment(\.locale, Locale(identifier: "ru_RU"))
                 .buttonStyle(.bordered)
                 .controlSize(.small)
-                .tint(.secondary)
+                .tint(Color(.systemGray2))
                 if !model.draft.isEmpty {
                     Button("Очистить") {
                         model.clear()
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(.borderless)
                     .controlSize(.small)
-                    .tint(.secondary)
+                    .tint(.accentColor)
                 }
             }
             ZStack(alignment: .topLeading) {

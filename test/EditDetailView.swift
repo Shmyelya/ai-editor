@@ -3,9 +3,11 @@ import SwiftUI
 
 struct EditDetailView: View {
     @State private var presentation: EditPresentation
+    private let allowUnchangedNotice: Bool
 
-    init(edit: TextEdit) {
+    init(edit: TextEdit, allowUnchangedNotice: Bool) {
         _presentation = State(initialValue: EditPresentation(edit: edit))
+        self.allowUnchangedNotice = allowUnchangedNotice
     }
 
     var body: some View {
@@ -20,6 +22,7 @@ struct EditDetailView: View {
                     resultText: presentation.resultText,
                     action: presentation.action,
                     isComplete: true,
+                    allowUnchangedNotice: allowUnchangedNotice,
                     ribbon: presentation.ribbon
                 )
             }

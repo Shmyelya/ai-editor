@@ -33,7 +33,10 @@ struct HistoryView: View {
                 List {
                     ForEach(edits) { edit in
                         NavigationLink {
-                            EditDetailView(edit: edit)
+                            EditDetailView(
+                                edit: edit,
+                                allowUnchangedNotice: edit.completedNormally
+                            )
                         } label: {
                             HistoryRow(edit: edit)
                         }

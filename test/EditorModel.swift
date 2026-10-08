@@ -18,6 +18,7 @@ final class EditorModel {
     private(set) var errorMessage: String?
     private(set) var saveErrorMessage: String?
     private(set) var isStreaming = false
+    private(set) var attemptWasInterrupted = false
 
     private var requestTask: Task<Void, Never>?
     private var requestGeneration = 0
@@ -71,6 +72,7 @@ final class EditorModel {
         requestGeneration += 1
         requestTask?.cancel()
         requestTask = nil
+        attemptWasInterrupted = true
         storeChangeRibbon()
         isStreaming = false
         persist(in: context)
@@ -117,6 +119,7 @@ final class EditorModel {
         changeRibbon = nil
         errorMessage = nil
         saveErrorMessage = nil
+        attemptWasInterrupted = false
         isStreaming = true
 
         let systemPrompt = action.systemPrompt(language: language, tone: tone)
@@ -141,6 +144,7 @@ final class EditorModel {
     private func finishIfCurrent(_ generation: Int) {
         guard generation == requestGeneration else { return }
         requestTask = nil
+        attemptWasInterrupted = false
         storeChangeRibbon()
         isStreaming = false
         persistCurrentRequest()
@@ -150,6 +154,7 @@ final class EditorModel {
         guard generation == requestGeneration else { return }
         errorMessage = Self.message(for: error)
         requestTask = nil
+        attemptWasInterrupted = true
         storeChangeRibbon()
         isStreaming = false
         persistCurrentRequest()
@@ -170,6 +175,7 @@ final class EditorModel {
                     return
                 }
                 edit.resultText = resultText
+                edit.completedNormally = !attemptWasInterrupted
                 try context.save()
             } else {
                 let edit = TextEdit(
@@ -178,7 +184,8 @@ final class EditorModel {
                     action: resultAction.rawValue,
                     language: resultAction == .translate ? sentLanguage.rawValue : nil,
                     tone: resultAction == .paraphrase ? sentTone.rawValue : nil,
-                    createdAt: Date()
+                    createdAt: Date(),
+                    completedNormally: !attemptWasInterrupted
                 )
                 context.insert(edit)
                 try context.save()
